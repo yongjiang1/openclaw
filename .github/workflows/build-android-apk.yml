@@ -1,5 +1,5 @@
 # 工作流名称
-name: Build Android APK from Monorepo (v2 - with PNPM setup)
+name: Build Android APK from Monorepo (v3 - with Debug LS)
 
 # 触发条件
 on:
@@ -8,29 +8,33 @@ on:
 
 jobs:
   build:
-    # 使用最新的 Ubuntu 虚拟机环境
     runs-on: ubuntu-latest
 
     steps:
-    # 1. 下载你 Fork 的仓库的全部代码
+    # 1. 下载代码
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # 2. 设置 Node.js 环境 (因为项目使用 pnpm)
+    # 2. 设置 Node.js
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20' # 使用项目推荐的 Node 版本
+        node-version: '20'
 
     # 3. 安装 pnpm
     - name: Install pnpm
       run: npm install -g pnpm
 
-    # 4. 在项目根目录安装所有依赖
+    # 4. 安装根目录依赖
     - name: Install root dependencies with pnpm
       run: pnpm install
 
-    # 5. 设置 Java 开发环境
+    # --- 新增的侦查步骤 ---
+    # 5. 列出 'apps' 目录的内容
+    - name: List contents of apps directory
+      run: ls -la ./apps/
+
+    # 6. 设置 Java 环境
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
@@ -38,15 +42,14 @@ jobs:
         distribution: 'temurin'
         cache: 'gradle'
 
-    # 6. 授权并执行 Gradle 编译
+    # 7. 编译安卓项目
     - name: Build Gradle project in android-node
-      # 指定安卓项目的工作目录
       working-directory: ./apps/android-node
       run: |
         chmod +x ./gradlew
         ./gradlew assembleDebug
 
-    # 7. 上传编译好的 APK 文件
+    # 8. 上传 APK
     - name: Upload APK as artifact
       uses: actions/upload-artifact@v4
       with:

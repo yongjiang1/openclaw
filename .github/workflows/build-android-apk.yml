@@ -1,5 +1,5 @@
 # 工作流名称
-name: Build Android APK from Monorepo (v3 - with Debug LS)
+name: Build Android APK from Monorepo (v4 - Correct Path)
 
 # 触发条件
 on:
@@ -29,12 +29,7 @@ jobs:
     - name: Install root dependencies with pnpm
       run: pnpm install
 
-    # --- 新增的侦查步骤 ---
-    # 5. 列出 'apps' 目录的内容
-    - name: List contents of apps directory
-      run: ls -la ./apps/
-
-    # 6. 设置 Java 环境
+    # 5. 设置 Java 环境
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
@@ -42,16 +37,18 @@ jobs:
         distribution: 'temurin'
         cache: 'gradle'
 
-    # 7. 编译安卓项目
-    - name: Build Gradle project in android-node
-      working-directory: ./apps/android-node
+    # 6. 编译安卓项目 (使用正确的 'android' 路径!)
+    - name: Build Gradle project
+      # 这是最关键的修正！
+      working-directory: ./apps/android 
       run: |
         chmod +x ./gradlew
         ./gradlew assembleDebug
 
-    # 8. 上传 APK
+    # 7. 上传 APK (使用正确的 'android' 路径!)
     - name: Upload APK as artifact
       uses: actions/upload-artifact@v4
       with:
         name: OpenClaw-Android-APK
-        path: apps/android-node/app/build/outputs/apk/debug/app-debug.apk
+        # 产物路径也已修正！
+        path: apps/android/app/build/outputs/apk/debug/app-debug.apk

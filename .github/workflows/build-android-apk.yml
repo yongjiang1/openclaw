@@ -1,0 +1,42 @@
+# 工作流名称
+name: Build Android APK from Monorepo
+
+# 触发条件：当有代码推送到主分支时
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    # 使用最新的 Ubuntu 虚拟机环境
+    runs-on: ubuntu-latest
+
+    steps:
+    # 第一步：下载你 Fork 的仓库的全部代码
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 第二步：设置 Java 开发环境 (安卓编译需要)
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: 'gradle'
+
+    # 第三步：进入安卓项目的子目录并执行编译
+    - name: Build Gradle project
+      # 这是最关键的一步，我们指定了工作目录
+      working-directory: ./apps/android-node
+      run: |
+        chmod +x ./gradlew
+        ./gradlew assembleDebug
+
+    # 第四步：上传编译好的 APK 文件作为产物
+    - name: Upload APK as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        # 上传后的文件包名称
+        name: OpenClaw-Android-APK
+        # APK 文件在虚拟机中的确切路径
+        path: apps/android-node/app/build/outputs/apk/debug/app-debug.apk

@@ -1,5 +1,5 @@
 # 工作流名称
-name: Build Android APK (v8 - Find Release APK)
+name: Build Android APK (v9 - Final Release)
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1-5. Checkout, Node, pnpm, Java (steps are the same)
+    # 1-5. Checkout, Node, pnpm, Java
     - name: Checkout repository
       uses: actions/checkout@v4
     - name: Set up Node.js
@@ -53,15 +53,10 @@ jobs:
         chmod +x ./gradlew
         ./gradlew assembleRelease
 
-    # --- 新增的搜查步骤 ---
-    # 8. 在编译产物中查找所有 .apk 文件
-    - name: Find the generated APK files
-      run: |
-        find ./apps/android -name "*.apk" -ls
-
-    # 9. 尝试上传 (可能会失败，但没关系)
+    # 8. 上传最终的 Release 版 APK
     - name: Upload Release APK as artifact
       uses: actions/upload-artifact@v4
       with:
         name: OpenClaw-Android-APK-Release
-        path: apps/android/app/build/outputs/apk/release/app-release.apk
+        # 这是最关键的修正，使用了日志中发现的真实文件名和路径！
+        path: apps/android/app/build/outputs/apk/release/openclaw-*-release.apk

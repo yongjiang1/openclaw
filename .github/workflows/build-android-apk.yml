@@ -1,5 +1,5 @@
 # 工作流名称
-name: Build Android APK (v7 - Release Build)
+name: Build Android APK (v8 - Find Release APK)
 
 on:
   push:
@@ -10,25 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. 下载代码
+    # 1-5. Checkout, Node, pnpm, Java (steps are the same)
     - name: Checkout repository
       uses: actions/checkout@v4
-
-    # 2. 设置 Node.js
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-
-    # 3. 安装 pnpm
     - name: Install pnpm
       run: npm install -g pnpm
-
-    # 4. 安装根目录依赖
     - name: Install root dependencies with pnpm
       run: pnpm install
-
-    # 5. 设置 Java 环境
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
@@ -36,7 +28,7 @@ jobs:
         distribution: 'temurin'
         cache: 'gradle'
 
-    # --- 新增步骤：为 Release 版生成签名密钥 ---
+    # 6. 生成签名密钥
     - name: Create Keystore for Signing
       run: |
         keytool -genkey -v \
@@ -52,7 +44,6 @@ jobs:
     # 7. 编译 Release 版 APK
     - name: Build Release APK
       working-directory: ./apps/android
-      # 设置环境变量来告诉 Gradle 签名密钥的位置和密码
       env:
         SIGNING_KEY_ALIAS: android
         SIGNING_KEY_PASSWORD: android
@@ -60,13 +51,17 @@ jobs:
         SIGNING_STORE_FILE: keystore.jks
       run: |
         chmod +x ./gradlew
-        # 执行 assembleRelease 命令
         ./gradlew assembleRelease
 
-    # 8. 上传 Release 版 APK
+    # --- 新增的搜查步骤 ---
+    # 8. 在编译产物中查找所有 .apk 文件
+    - name: Find the generated APK files
+      run: |
+        find ./apps/android -name "*.apk" -ls
+
+    # 9. 尝试上传 (可能会失败，但没关系)
     - name: Upload Release APK as artifact
       uses: actions/upload-artifact@v4
       with:
         name: OpenClaw-Android-APK-Release
-        # Release 版 APK 的路径通常不同
         path: apps/android/app/build/outputs/apk/release/app-release.apk

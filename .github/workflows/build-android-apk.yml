@@ -1,7 +1,6 @@
 # 工作流名称
-name: Build Android APK from Monorepo (v4 - Correct Path)
+name: Build Android APK from Monorepo (v5 - Find APK)
 
-# 触发条件
 on:
   push:
     branches: [ "main" ]
@@ -37,18 +36,23 @@ jobs:
         distribution: 'temurin'
         cache: 'gradle'
 
-    # 6. 编译安卓项目 (使用正确的 'android' 路径!)
+    # 6. 编译安卓项目
     - name: Build Gradle project
-      # 这是最关键的修正！
       working-directory: ./apps/android 
       run: |
         chmod +x ./gradlew
         ./gradlew assembleDebug
 
-    # 7. 上传 APK (使用正确的 'android' 路径!)
+    # --- 新增的搜查步骤 ---
+    # 7. 在编译产物中查找 .apk 文件
+    - name: Find the generated APK
+      id: find_apk
+      run: |
+        find ./apps/android -name "*.apk" -ls
+    
+    # 8. 上传 APK (使用一个临时的、可能会失败的路径)
     - name: Upload APK as artifact
       uses: actions/upload-artifact@v4
       with:
         name: OpenClaw-Android-APK
-        # 产物路径也已修正！
         path: apps/android/app/build/outputs/apk/debug/app-debug.apk

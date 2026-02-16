@@ -1,5 +1,5 @@
 # 工作流名称
-name: Build Android APK (v6 - Final)
+name: Build Android APK (v7 - Release Build)
 
 on:
   push:
@@ -36,17 +36,37 @@ jobs:
         distribution: 'temurin'
         cache: 'gradle'
 
-    # 6. 编译安卓项目
-    - name: Build Gradle project
-      working-directory: ./apps/android 
+    # --- 新增步骤：为 Release 版生成签名密钥 ---
+    - name: Create Keystore for Signing
+      run: |
+        keytool -genkey -v \
+          -keystore ./apps/android/keystore.jks \
+          -storepass 'android' \
+          -alias 'android' \
+          -keypass 'android' \
+          -keyalg 'RSA' \
+          -keysize 2048 \
+          -validity 10000 \
+          -dname 'CN=Android Debug,O=Android,C=US'
+
+    # 7. 编译 Release 版 APK
+    - name: Build Release APK
+      working-directory: ./apps/android
+      # 设置环境变量来告诉 Gradle 签名密钥的位置和密码
+      env:
+        SIGNING_KEY_ALIAS: android
+        SIGNING_KEY_PASSWORD: android
+        SIGNING_STORE_PASSWORD: android
+        SIGNING_STORE_FILE: keystore.jks
       run: |
         chmod +x ./gradlew
-        ./gradlew assembleDebug
+        # 执行 assembleRelease 命令
+        ./gradlew assembleRelease
 
-    # 7. 上传 APK (使用我们找到的精确路径!)
-    - name: Upload APK as artifact
+    # 8. 上传 Release 版 APK
+    - name: Upload Release APK as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: OpenClaw-Android-APK
-        # 这是最关键的修正，使用了日志中发现的真实文件名！
-        path: apps/android/app/build/outputs/apk/debug/openclaw-*-debug.apk
+        name: OpenClaw-Android-APK-Release
+        # Release 版 APK 的路径通常不同
+        path: apps/android/app/build/outputs/apk/release/app-release.apk

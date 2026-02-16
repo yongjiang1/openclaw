@@ -1,5 +1,5 @@
 # 工作流名称
-name: Build Android APK from Monorepo (v5 - Find APK)
+name: Build Android APK (v6 - Final)
 
 on:
   push:
@@ -43,16 +43,10 @@ jobs:
         chmod +x ./gradlew
         ./gradlew assembleDebug
 
-    # --- 新增的搜查步骤 ---
-    # 7. 在编译产物中查找 .apk 文件
-    - name: Find the generated APK
-      id: find_apk
-      run: |
-        find ./apps/android -name "*.apk" -ls
-    
-    # 8. 上传 APK (使用一个临时的、可能会失败的路径)
+    # 7. 上传 APK (使用我们找到的精确路径!)
     - name: Upload APK as artifact
       uses: actions/upload-artifact@v4
       with:
         name: OpenClaw-Android-APK
-        path: apps/android/app/build/outputs/apk/debug/app-debug.apk
+        # 这是最关键的修正，使用了日志中发现的真实文件名！
+        path: apps/android/app/build/outputs/apk/debug/openclaw-*-debug.apk

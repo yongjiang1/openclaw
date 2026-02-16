@@ -1,5 +1,5 @@
 # 工作流名称
-name: Build Android APK (v9 - Final Release)
+name: Build Android APK (v10 - Inject Signing Config)
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
     - name: Create Keystore for Signing
       run: |
         keytool -genkey -v \
-          -keystore ./apps/android/keystore.jks \
+          -keystore ./apps/android/app/keystore.jks \
           -storepass 'android' \
           -alias 'android' \
           -keypass 'android' \
@@ -41,22 +41,37 @@ jobs:
           -validity 10000 \
           -dname 'CN=Android Debug,O=Android,C=US'
 
-    # 7. 编译 Release 版 APK
+    # --- 关键修正：直接向 build.gradle.kts 注入签名配置 ---
+    - name: Inject Signing Config into Gradle
+      run: |
+        echo "
+        android {
+            signingConfigs {
+                release {
+                    storeFile file('keystore.jks')
+                    storePassword 'android'
+                    keyAlias 'android'
+                    keyPassword 'android'
+                }
+            }
+            buildTypes {
+                release {
+                    signingConfig signingConfigs.release
+                }
+            }
+        }
+        " >> ./apps/android/app/build.gradle.kts
+
+    # 8. 编译 Release 版 APK
     - name: Build Release APK
       working-directory: ./apps/android
-      env:
-        SIGNING_KEY_ALIAS: android
-        SIGNING_KEY_PASSWORD: android
-        SIGNING_STORE_PASSWORD: android
-        SIGNING_STORE_FILE: keystore.jks
       run: |
         chmod +x ./gradlew
         ./gradlew assembleRelease
 
-    # 8. 上传最终的 Release 版 APK
+    # 9. 上传最终的 Release 版 APK
     - name: Upload Release APK as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: OpenClaw-Android-APK-Release
-        # 这是最关键的修正，使用了日志中发现的真实文件名和路径！
+        name: OpenClaw-Android-APK-Release-Signed
         path: apps/android/app/build/outputs/apk/release/openclaw-*-release.apk
